@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Buffers;
+using System.Text;
 
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
@@ -76,6 +77,71 @@ public class LinkerHintsHelpersBench
 		return builder.ToString();
 	}
 
+	internal static string GetPropertyAvailableName_Rent(string name)
+	{
+		// output length remains unchanged whatever the input data is
+		var buffer = ArrayPool<char>.Shared.Rent(name.Length + "Is_".Length + "_Available".Length);
+		buffer[0] = 'I';
+		buffer[1] = 's';
+		buffer[2] = '_';
+		int n = 3;
+		// single iteration over the chars
+		foreach (var c in name) {
+			buffer[n++] = c switch
+			{
+				'`' or '<' or '>' or '+' or '[' or ']' or '.' or ',' => '_',
+				_ => c,
+			};
+		}
+		buffer[n++] = '_';
+		buffer[n++] = 'A';
+		buffer[n++] = 'v';
+		buffer[n++] = 'a';
+		buffer[n++] = 'i';
+		buffer[n++] = 'l';
+		buffer[n++] = 'a';
+		buffer[n++] = 'b';
+		buffer[n++] = 'l';
+		buffer[n++] = 'e';
+		Span<char> _chars = buffer;
+		string result = _chars.ToString();
+		ArrayPool<char>.Shared.Return(buffer);
+		return result;
+	}
+
+	internal static string GetPropertyAvailableName_Stack(string name)
+	{
+		// output length remains unchanged whatever the input data is
+		// var buffer = ArrayPool<char>.Shared.Rent(name.Length + "Is_".Length + "_Available".Length);
+		Span<char> buffer = stackalloc char[name.Length + "Is_".Length + "_Available".Length];
+		buffer[0] = 'I';
+		buffer[1] = 's';
+		buffer[2] = '_';
+		int n = 3;
+		// single iteration over the chars
+		foreach (var c in name) {
+			buffer[n++] = c switch
+			{
+				'`' or '<' or '>' or '+' or '[' or ']' or '.' or ',' => '_',
+				_ => c,
+			};
+		}
+		buffer[n++] = '_';
+		buffer[n++] = 'A';
+		buffer[n++] = 'v';
+		buffer[n++] = 'a';
+		buffer[n++] = 'i';
+		buffer[n++] = 'l';
+		buffer[n++] = 'a';
+		buffer[n++] = 'b';
+		buffer[n++] = 'l';
+		buffer[n++] = 'e';
+		// Span<char> _chars = buffer;
+		// string result = _chars.ToString();
+		// ArrayPool<char>.Shared.Return(buffer);
+		return buffer.ToString();
+	}
+
 	[Benchmark]
 	public void Original()
 	{
@@ -109,6 +175,24 @@ public class LinkerHintsHelpersBench
 		foreach (var line in data)
 		{
 			GetPropertyAvailableName_Custom(line);
+		}
+	}
+
+	[Benchmark]
+	public void Rent()
+	{
+		foreach (var line in data)
+		{
+			GetPropertyAvailableName_Rent(line);
+		}
+	}
+
+	[Benchmark]
+	public void Stack()
+	{
+		foreach (var line in data)
+		{
+			GetPropertyAvailableName_Stack(line);
 		}
 	}
 
